@@ -1,0 +1,21 @@
+fastapi>=0.111.1 # FastAPI framework for building APIs with Python type hints.
+uvicorn>=0.30.1 # Uvicorn ASGI server for serving FastAPI applications.
+sqlalchemy>=2.0.31 # SQLAlchemy SQL toolkit and ORM library for Python.
+pydantic>=1.10.13 # Pydantic data validation and settings management using type annotations.
+python-dotenv>=1.0.1 # Python-dotenv for loading environment variables from a .env file.
+
+# email-validator>=2.2.0 # Email validation library for Pydantic.
+mysqlclient>=2.2.4 # Mysqlclient Python interface to MySQL databases.
+
+
+# pytest-asyncio>=0.23.8
+# python-multipart>=0.0.9
+
+tzdata>=2025.2
+coloredlogs>=15.0.1 # Colored logs for enhanced logging.
+# fastapi_mail>=1.4.1
+pymysql>=1.1.1
+
+# firebase-admin>=6.7.0
+
+# alembic>=1.15.2
