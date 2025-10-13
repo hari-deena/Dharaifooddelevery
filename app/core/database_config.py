@@ -13,6 +13,14 @@ DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_HOST = os.getenv('DB_HOST')
 DB_NAME = os.getenv('DB_NAME')
 
+print("DB_USER: ------------> ",DB_USER)
+print("DB_PASSWORD: ------------> ",DB_PASSWORD)
+print("DB_HOST: ------------> ",DB_HOST)
+print("DB_NAME: ------------> ",DB_NAME)
+
+
+
+
 # SQLAlchemy database URL format
 DATABASE_URL = f"mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
 

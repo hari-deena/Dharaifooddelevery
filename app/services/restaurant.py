@@ -6,7 +6,7 @@ from app.utils import config
 # from app.utils.email_templates import generate_booking_confirmation, generate_booking_cancellation, generate_turf_inactive_cancellation, generate_booking_completed, generate_turf_booking_confirmation_nad_cancelation
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from app.models.table_management import Restaurant
+from app.models.table_management import Restaurant, RestruntShop
 from app.core.logger_config import configure_logger
 from app.utils import config
 import asyncio
@@ -21,65 +21,7 @@ def generate_filename(file):
     """Generate a unique filename for uploaded files."""
     return f"{uuid4()}_{file.filename}"
 
-
-
-# async def add_restrunt(restaurant_data,logo,restaurant_image, user_data, db):
-#     try:
-#         logger.info("Resterunt Data: %s",restaurant_data)
-#         logger.info("Logo:  %s",logo)
-#         logger.info("restaurant_image:  %s",restaurant_image)
-#         logger.info("user_data: --------> %s", user_data)
-        
-#         existing_restaurant = db.query(Restaurant).filter(
-#         Restaurant.restaurant_name == restaurant_data.restaurant_name
-#         ).first()
-
-#         if existing_restaurant:
-#             logger.error("Restaurant with this name already exists")
-#             return bad_request_response("Restaurant with this name already exists")
-        
-#         check_restaurant = db.query(Restaurant).filter(
-#         Restaurant.owner_id == user_data["user_id"]
-#         ).first()
-
-#         if check_restaurant:
-#             logger.error("You have already register your restaurant.")
-#             return bad_request_response("You have already register your restaurant.")
-        
-        
-#         logo_filename = f"{uuid4()}_{logo.filename}"
-#         image_filename = f"{uuid4()}_{restaurant_image.filename}"
-        
-        
-#         # 🔹 Step 3: Insert into DB
-#         new_restaurant = Restaurant(
-#             owner_id=user_data["user_id"],
-#             restaurant_name=restaurant_data.restaurant_name,
-#             address=restaurant_data.address,
-#             vat_tax=restaurant_data.vat_tax,
-#             cuisine=restaurant_data.cuisine,  # should already be list/dict for JSON
-#             food_type=restaurant_data.food_type,
-#             zone=restaurant_data.zone,
-#             latitude=restaurant_data.latitude,
-#             longitude=restaurant_data.longitude,
-#             restaurant_phone=restaurant_data.restaurant_phone,
-#             delivery_type=restaurant_data.delivery_type,
-#             logo=logo_filename,
-#             restaurant_image=image_filename,
-#         )
-
-#         db.add(new_restaurant)
-#         db.commit()
-#         db.refresh(new_restaurant)
-        
-       
-#         logger.info("Successfully restrunt added.")
-#         return handle_success("Successfully restrunt added.")
-
-#     except Exception as e:
-#         logger.exception("Error during booking registration: %s", str(e))
-#         return server_error_response("Internal server error.") 
-    
+   
  
 async def add_restaurant(restaurant_data, logo, restaurant_image, user_data, db):
     logger.info("Adding restaurant for user_id: %s", user_data["user_id"])
@@ -117,70 +59,12 @@ async def add_restaurant(restaurant_data, logo, restaurant_image, user_data, db)
         db.add(new_restaurant)
         db.commit()
         db.refresh(new_restaurant)
-        logger.info("Restaurant added successfully: %s", new_restaurant.restaurant_id)
+        logger.info("Restaurant added successfully: %s", new_restaurant.shop_id)
         return handle_success("Successfully added restaurant.")
     except Exception as e:
         logger.exception("Database error while adding restaurant: %s", str(e))
         return server_error_response("Internal server error.")   
 
-
-# async def update_restrunt(restaurant_data,logo,restaurant_image, user_data, db):
-#     try:
-#         logger.info("Resterunt Data: %s",restaurant_data)
-#         logger.info("Logo:  %s",logo)
-#         logger.info("restaurant_image:  %s",restaurant_image)
-#         logger.info("user_data: --------> %s", user_data)
-        
-#         logo_filename = f"{uuid4()}_{logo.filename}"
-#         image_filename = f"{uuid4()}_{restaurant_image.filename}"
-        
-        
-#         existing_restaurant = db.query(Restaurant).filter(
-#         Restaurant.restaurant_id == restaurant_data.restaurant_id
-#         ).first()
-        
-#         if not existing_restaurant:
-#             logger.error("Invalid restaurant id.")
-#             return bad_request_response("Invalid restaurant id.")
-        
-    
-#         existing_restaurant_name = db.query(Restaurant).filter(
-#             Restaurant.restaurant_name == restaurant_data.restaurant_name,
-#             Restaurant.restaurant_id != restaurant_data.restaurant_id  # Exclude current restaurant
-#         ).first()
-        
-#         if existing_restaurant_name:
-#             logger.error("Restaurant with this name already exists")
-#             return bad_request_response("Restaurant with this name already exists")
-        
-        
-#         # Update the fields
-#         existing_restaurant.restaurant_name = restaurant_data.restaurant_name
-#         existing_restaurant.address = restaurant_data.address
-#         existing_restaurant.vat_tax = restaurant_data.vat_tax
-#         existing_restaurant.cuisine = restaurant_data.cuisine  # list/dict for JSON
-#         existing_restaurant.food_type = restaurant_data.food_type
-#         existing_restaurant.zone = restaurant_data.zone
-#         existing_restaurant.latitude = restaurant_data.latitude
-#         existing_restaurant.longitude = restaurant_data.longitude
-#         existing_restaurant.restaurant_phone = restaurant_data.restaurant_phone
-#         existing_restaurant.delivery_type = restaurant_data.delivery_type
-#         existing_restaurant.logo = logo_filename
-#         existing_restaurant.restaurant_image = image_filename
-
-#         # Commit the changes
-#         db.commit()
-#         db.refresh(existing_restaurant)
-       
-#         logger.info("Successfully restrunt Updated.")
-#         return handle_success("Successfully restrunt Updated.")
-
-#     except Exception as e:
-#         logger.exception("Error during booking registration: %s", str(e))
-#         return server_error_response("Internal server error.") 
-   
-   
-   
    
 
 async def update_restaurant(restaurant_data, logo, restaurant_image, user_data, db):
@@ -315,3 +199,240 @@ async def get_restaurant(restaurant_id, user_data, db):
     except Exception as e:
         logger.exception("Database error while fetching restaurant: %s", str(e))
         return server_error_response("Internal server error.")
+
+
+
+
+
+
+
+
+
+
+
+# --------------------------------------- new code ------------------------------------------
+from sqlalchemy import and_
+
+async def add_shop(shop_data , user_data, db):
+
+    try:
+        logger.info("Shop details : %s", shop_data)
+        logger.info("User data: %s",user_data)
+        
+        # Check if restaurant with same name exists
+        if db.query(RestruntShop).filter(
+    and_(
+                RestruntShop.shop_name == shop_data.shop_name,
+                RestruntShop.shop_address == shop_data.shop_address
+            )
+        ).first():
+            logger.error("Restaurant with this name already exists: %s", shop_data.shop_name)
+            return bad_request_response("Restaurant with this name already exists")
+        
+        
+         # Create RestruntShop object
+        new_shop = RestruntShop(
+            owner_id=user_data["user_id"],
+            shop_name=shop_data.shop_name,
+            shop_address=shop_data.shop_address,
+            GST_license=shop_data.GST_license,
+            fssai=shop_data.fssai,
+            pan=shop_data.pan,
+            bank_name=shop_data.bank_name,
+            account_number=shop_data.account_number,
+            ifsc_code=shop_data.ifsc_code,
+            is_open=False,  # default
+            verification_status='PENDING',
+            status='ACTIVE'
+        )
+
+        # Add to database
+        db.add(new_shop)
+        db.commit()
+        db.refresh(new_shop)  # refresh to get auto-generated shop_id
+            
+       
+        return handle_success("Successfully added shop details.")
+    except Exception as e:
+        logger.exception("Database error while updating restaurant: %s", str(e))
+        return server_error_response("Internal server error.")   
+
+
+def shop_to_dict(shop: RestruntShop):
+    return {
+        "shop_id": shop.shop_id or "",
+        "owner_id": shop.owner_id or "",
+        "shop_name": shop.shop_name or "",
+        "shop_address": shop.shop_address or "",
+        "latitude": shop.latitude if shop.latitude is not None else "",
+        "logtitude": shop.logtitude if shop.logtitude is not None else "",
+        "GST_license": shop.GST_license or "",
+        "fssai": shop.fssai or "",
+        "pan": shop.pan or "",
+        "bank_name": shop.bank_name or "",
+        "account_number": shop.account_number or "",
+        "ifsc_code": shop.ifsc_code or "",
+        "logo": shop.logo or {},
+        "banner": shop.banner or {},
+        "kitchen_image": shop.kitchen_image or {},
+        "is_open": shop.is_open if shop.is_open is not None else False,
+        "verification_status": shop.verification_status or "PENDING",
+        "reson_for_rejection": shop.reson_for_rejection or "",
+        "status": shop.status or "ACTIVE",
+        "created_at": shop.created_at.isoformat() if shop.created_at else "",
+        "updated_at": shop.updated_at.isoformat() if shop.updated_at else ""
+    }
+
+
+
+
+# async def get_shop(shop_id, verification_status, user_data, db):
+#     try:
+#         logger.info("Restaurant id: %s", shop_id)
+#         logger.info("User data: %s", user_data)
+
+#         if shop_id:
+#             restaurant = db.query(RestruntShop).filter(
+#                 RestruntShop.shop_id == shop_id,
+#                 RestruntShop.status == "ACTIVE"
+#             ).first()
+
+#             if not restaurant:
+#                 logger.error("Restaurant not found")
+#                 return bad_request_response("Restaurant not found")
+
+#             return handle_success_with_data(
+#                 "Successfully fetched restaurant.",
+#                 shop_to_dict(restaurant)
+#             )
+
+#         restaurants = db.query(RestruntShop).filter(RestruntShop.status == "ACTIVE").all()
+#         logger.info("Restaurants fetched successfully")
+            
+#         return handle_success_with_data(
+#             "Successfully fetched restaurants.",
+#             [shop_to_dict(r) for r in restaurants]
+#         )
+
+#     except Exception as e:
+#         logger.exception("Database error while fetching restaurant: %s", str(e))
+#         return server_error_response("Internal server error.")
+
+
+async def get_shop(shop_id, verification_status, user_data, db):
+    try:
+        logger.info("Restaurant id: %s", shop_id)
+        logger.info("User data: %s", user_data)
+
+        query = db.query(RestruntShop).filter(RestruntShop.status == "ACTIVE")
+
+        # Filter by shop_id if provided
+        if shop_id:
+            query = query.filter(RestruntShop.shop_id == shop_id)
+
+        # Filter by verification_status if provided
+        if verification_status:
+            allowed_status = ["PENDING","APPROVED", "REJECTED"]
+            if verification_status not in allowed_status:
+                return bad_request_response(f"Invalid verification_status. Allowed values: {allowed_status}")
+            query = query.filter(RestruntShop.verification_status == verification_status)
+
+        restaurants = query.all()
+
+        if not restaurants:
+            return handle_success("No restaurants found.")
+
+        # If single shop_id requested, return first restaurant
+        if shop_id:
+            return handle_success_with_data(
+                "Successfully fetched restaurant.",
+                shop_to_dict(restaurants[0])
+            )
+
+        return handle_success_with_data(
+            "Successfully fetched restaurants.",
+            [shop_to_dict(r) for r in restaurants]
+        )
+
+    except Exception as e:
+        logger.exception("Database error while fetching restaurant: %s", str(e))
+        return server_error_response("Internal server error.")
+
+
+async def shop_verification(shop_data , db):
+
+    try:
+        logger.info("Shop details : %s", shop_data)
+        
+        # Fetch the shop object
+        shop = db.query(RestruntShop).filter(RestruntShop.shop_id == shop_data.shop_id).first()
+        if not shop:
+            logger.info(f"Shop with id {shop_data.shop_id} not found")
+            return bad_request_response(f"Shop with id {shop_data.shop_id} not found")
+        
+        # Update fields
+        shop.verification_status = shop_data.verification_status
+        shop.reson_for_rejection = shop_data.reason if shop_data.reason else None
+        
+        # Commit changes
+        db.commit()
+        db.refresh(shop) 
+        
+         # Create RestruntShop object
+          
+        logger.info("Successfullyverification.")
+        return handle_success("Successfullyverification.")
+    except Exception as e:
+        logger.exception("Database error while updating restaurant: %s", str(e))
+        return server_error_response("Internal server error.")   
+
+
+
+# Images add Api 
+
+from app.services.s3_operations import upload_images_to_s3, delete_s3_folder_objects
+
+async def add_shop_imaes(shop_id,logo,shop_image,banner, db):
+
+    try:
+        logger.info("shop_id  : %s", shop_id)
+        logger.info("logo  : %s", logo)
+        logger.info("shop_image  : %s", shop_image)
+        logger.info("banner  : %s", banner)
+        
+        # Fetch the shop object
+        shop = db.query(RestruntShop).filter(RestruntShop.shop_id == shop_id).first()
+        if not shop:
+            logger.info(f"Shop with id {shop_id} not found")
+            return bad_request_response(f"Shop with id {shop_id} not found")
+        
+        
+        folder = f"shop/{shop_id}"
+        
+        delete_image = delete_s3_folder_objects(folder)
+        logger.info("delete_image: --------------> %s",delete_image)
+        
+        logo_urls = await upload_images_to_s3([logo], folder)
+        logger.info("logo_urls: ------------------> %s",logo_urls)
+        
+        shop_image_urls = await upload_images_to_s3([shop_image], folder)
+        logger.info("shop_image_urls: ------------------> %s",shop_image_urls)
+        
+        banner_urls = await upload_images_to_s3([banner], folder)
+        logger.info("banner_urls: ------------------> %s",banner_urls)
+        
+        
+        shop.logo = logo_urls if logo_urls else None
+        shop.banner = banner_urls if banner_urls else None
+        shop.kitchen_image = shop_image_urls if shop_image_urls else None
+        
+        
+        # Commit changes
+        db.commit()
+        db.refresh(shop) 
+          
+        logger.info("Successfully updated images.")
+        return handle_success("Successfully updated images.")
+    except Exception as e:
+        logger.exception("Database error while updating restaurant: %s", str(e))
+        return server_error_response("Internal server error.")   

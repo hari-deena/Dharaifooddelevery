@@ -6,7 +6,7 @@ from typing import Optional, List
 from ..utils.response_handling import bad_request_response, handle_unauthorized_error
 from pydantic import ValidationError
 from fastapi.responses import JSONResponse
-from ..schemas.restaurant import RestaurantSchema 
+from ..schemas.restaurant import RestaurantSchema , RestruntShopCreateSchema, ShopVerificationRequest
 from app.core.logger_config import configure_logger
 logger = configure_logger('justplay')
 from ..utils.response_handling import CustomAuthException
@@ -134,3 +134,84 @@ async def get_restaurant(
         return bad_request_response(first_error_msg)
 
 
+
+
+
+
+
+
+# ------------------------------------------------------------------------- newly worked -----------------------------------------------
+
+
+@restaurant_router.post("/add_shop")
+async def add_shop(
+    request: RestruntShopCreateSchema,
+    db: Session = Depends(get_db),
+    user_data: str = Depends(verify_token)  # <-- Token auth dependency
+    
+):
+    try:
+        return await restaurant.add_shop(request, user_data, db)
+        
+    except ValidationError as ve:
+        # Extract only the custom message from the error list
+        first_error_msg = ve.errors()[0]['msg']
+        return bad_request_response(first_error_msg)
+    
+    
+    
+@restaurant_router.get("/get_shop")
+async def get_restaurant(
+    shop_id : Optional[int] = Query(None, description="restaurant id using get feedback"),
+    verification_status : Optional[str] = Query(None, description="restaurant verification_status  using get feedback"),
+    db: Session = Depends(get_db),
+    user_data: str = Depends(verify_token)  # <-- Token auth dependency
+    
+):
+    try:
+        return await restaurant.get_shop(shop_id,verification_status,user_data, db)
+        
+    except ValidationError as ve:
+        # Extract only the custom message from the error list
+        first_error_msg = ve.errors()[0]['msg']
+        return bad_request_response(first_error_msg)
+
+
+@restaurant_router.post("/shop_verification")
+async def shop_verification(
+    request: ShopVerificationRequest,
+    db: Session = Depends(get_db)
+    
+):
+    try:
+        return await restaurant.shop_verification(request, db)
+    except ValidationError as ve:
+        # Extract only the custom message from the error list
+        first_error_msg = ve.errors()[0]['msg']
+        return bad_request_response(first_error_msg)
+    
+    
+    
+@restaurant_router.put("/add_shop_imaes")
+async def add_shop_imaes(
+    shop_id: int = Form(...),
+    logo: Optional[UploadFile] = File(...),
+    shop_image: Optional[UploadFile] = File(...),
+    banner: Optional[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+    # user_data: str = Depends(verify_token)  # <-- Token auth dependency
+    
+):
+    """
+    Add a new restaurant (via form-data)
+    """
+    try:
+
+        
+        return await restaurant.add_shop_imaes(shop_id,logo,shop_image,banner, db)
+        
+
+    except ValidationError as ve:
+        # Extract only the custom message from the error list
+        first_error_msg = ve.errors()[0]['msg']
+        return bad_request_response(first_error_msg)

@@ -127,6 +127,63 @@ class Category(Base):
 
     category_id = Column(Integer, primary_key=True, autoincrement=True)
     category_name = Column(String(100), unique=True, nullable=False)  # e.g. Starters, Main Course, Dessert, Beverages
+    
+    
+    
+# ------------------------------------------   new code  --------------------------------------------------
+
+
+class RestruntShop(Base):
+    __tablename__ = 'restrunt_shop'
+
+    shop_id = Column(Integer, primary_key=True, autoincrement=True)
+    owner_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)  # Owner user
+    shop_name = Column(String(255), nullable=True)
+    shop_address = Column(Text, nullable=True)
+    latitude = Column(Float, nullable=True)
+    logtitude = Column(Float, nullable=True)  # Kept original spelling
+    GST_license = Column(String(50), nullable=True)
+    fssai = Column(String(14), nullable=True)
+    pan = Column(String(10), nullable=True)
+    bank_name = Column(String(100), nullable=True)
+    account_number = Column(String(50), nullable=True)
+    ifsc_code = Column(String(11), nullable=True)
+    
+    # Images as JSON (e.g., {"url": "...", "public_id": "..."} or list of URLs)
+    logo = Column(JSON, nullable=True)
+    banner = Column(JSON, nullable=True)
+    kitchen_image = Column(JSON, nullable=True)
+    
+    # Special fields with defaults
+    is_open = Column(Boolean, default=False, nullable=False)
+    verification_status = Column(
+        Enum('PENDING', 'APPROVED', 'REJECTED', name='verification_status_enum'),
+        default='PENDING',
+        nullable=False
+    )
+    
+    reson_for_rejection = Column(Text, nullable=True)  # Kept original spelling
+
+    status = Column(Enum('ACTIVE','INACTIVE', name='configurable_items_status_enum'), nullable=False,default="ACTIVE")
+
+
+    # Timestamps with server defaults
+    created_at = Column(
+        TIMESTAMP,
+        server_default=text("CURRENT_TIMESTAMP"),
+        nullable=False
+    )
+    updated_at = Column(
+        TIMESTAMP,
+        server_default=text("CURRENT_TIMESTAMP"),
+        onupdate=func.now(),
+        nullable=False
+    )
+
+
+ 
+
+
 
 
 # # Initialize database connection

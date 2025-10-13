@@ -6,9 +6,6 @@ from app.routes.menu import menu_router
 
 
 
-
-
-
 index_router = APIRouter()
 index_router.include_router(user_router, prefix="/user", tags=["user"])
 index_router.include_router(restaurant_router, prefix="/restaurant", tags=["restaurant"])
