@@ -31,7 +31,7 @@ app = FastAPI(
     redoc_url=None
 )
 
-app.include_router(index_router, prefix="/justplay")
+app.include_router(index_router, prefix="/dharaifood")
 
 
 # Add CORS middleware to allow all origins

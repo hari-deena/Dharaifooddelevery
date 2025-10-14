@@ -90,6 +90,8 @@ import re
 from typing import Optional
 
 class RestruntShopCreateSchema(BaseModel):
+    shop_id: Optional[int] = Field(None, description="Unique ID of the shop")
+    
     shop_name: str = Field(..., min_length=1, max_length=255)
     shop_address: str = Field(..., min_length=5)
     
@@ -142,19 +144,19 @@ class RestruntShopCreateSchema(BaseModel):
             raise ValueError('Account number must contain only digits, spaces, or hyphens')
         return v
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "shop_name": "Tasty Bites",
-                "shop_address": "123 Food Street, Mumbai, Maharashtra",
-                "GST_license": "27AABCCDDEEFFG",
-                "fssai": "12345678901234",
-                "pan": "ABCDE1234F",
-                "bank_name": "State Bank of India",
-                "account_number": "12345678901",
-                "ifsc_code": "SBIN0002499"
-            }
-        }
+    # class Config:
+    #     schema_extra = {
+    #         "example": {
+    #             "shop_name": "Tasty Bites",
+    #             "shop_address": "123 Food Street, Mumbai, Maharashtra",
+    #             "GST_license": "27AABCCDDEEFFG",
+    #             "fssai": "12345678901234",
+    #             "pan": "ABCDE1234F",
+    #             "bank_name": "State Bank of India",
+    #             "account_number": "12345678901",
+    #             "ifsc_code": "SBIN0002499"
+    #         }
+    #     }
         
         
         

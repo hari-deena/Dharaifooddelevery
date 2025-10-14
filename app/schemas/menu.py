@@ -4,7 +4,7 @@ from typing import List, Optional
 
 class MenuSchema(BaseModel):
     menu_id: Optional[int] = Field(None, description="ID of the menu (optional, must be integer if provided)")
-    restaurant_id: int = Field(..., description="ID of the restaurant")
+    shop_id: int = Field(..., description="ID of the restaurant")
     item_name: str = Field(..., min_length=2, max_length=255, description="Name of the dish")
     description: Optional[str] = Field(None, max_length=500, description="Dish description")
     price: float = Field(..., gt=0, description="Original price of the dish")

@@ -177,7 +177,7 @@ async def get_restaurant(
         return bad_request_response(first_error_msg)
 
 
-@restaurant_router.post("/shop_verification")
+@restaurant_router.put("/shop_verification")
 async def shop_verification(
     request: ShopVerificationRequest,
     db: Session = Depends(get_db)

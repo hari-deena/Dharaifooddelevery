@@ -213,49 +213,139 @@ async def get_restaurant(restaurant_id, user_data, db):
 # --------------------------------------- new code ------------------------------------------
 from sqlalchemy import and_
 
-async def add_shop(shop_data , user_data, db):
+# async def add_shop(shop_data , user_data, db):
 
-    try:
-        logger.info("Shop details : %s", shop_data)
-        logger.info("User data: %s",user_data)
+#     try:
+#         logger.info("Shop details : %s", shop_data)
+#         logger.info("User data: %s",user_data)
         
-        # Check if restaurant with same name exists
-        if db.query(RestruntShop).filter(
-    and_(
-                RestruntShop.shop_name == shop_data.shop_name,
-                RestruntShop.shop_address == shop_data.shop_address
-            )
-        ).first():
-            logger.error("Restaurant with this name already exists: %s", shop_data.shop_name)
-            return bad_request_response("Restaurant with this name already exists")
+#         # Check if restaurant with same name exists
+#         if db.query(RestruntShop).filter(
+#     and_(
+#                 RestruntShop.shop_name == shop_data.shop_name,
+#                 RestruntShop.shop_address == shop_data.shop_address
+#             )
+#         ).first():
+#             logger.error("Restaurant with this name already exists: %s", shop_data.shop_name)
+#             return bad_request_response("Restaurant with this name already exists")
         
         
-         # Create RestruntShop object
-        new_shop = RestruntShop(
-            owner_id=user_data["user_id"],
-            shop_name=shop_data.shop_name,
-            shop_address=shop_data.shop_address,
-            GST_license=shop_data.GST_license,
-            fssai=shop_data.fssai,
-            pan=shop_data.pan,
-            bank_name=shop_data.bank_name,
-            account_number=shop_data.account_number,
-            ifsc_code=shop_data.ifsc_code,
-            is_open=False,  # default
-            verification_status='PENDING',
-            status='ACTIVE'
-        )
+#          # Create RestruntShop object
+#         new_shop = RestruntShop(
+#             owner_id=user_data["user_id"],
+#             shop_name=shop_data.shop_name,
+#             shop_address=shop_data.shop_address,
+#             GST_license=shop_data.GST_license,
+#             fssai=shop_data.fssai,
+#             pan=shop_data.pan,
+#             bank_name=shop_data.bank_name,
+#             account_number=shop_data.account_number,
+#             ifsc_code=shop_data.ifsc_code,
+#             is_open=False,  # default
+#             verification_status='PENDING',
+#             status='ACTIVE'
+#         )
 
-        # Add to database
-        db.add(new_shop)
-        db.commit()
-        db.refresh(new_shop)  # refresh to get auto-generated shop_id
+#         # Add to database
+#         db.add(new_shop)
+#         db.commit()
+#         db.refresh(new_shop)  # refresh to get auto-generated shop_id
             
        
-        return handle_success("Successfully added shop details.")
+#         return handle_success("Successfully added shop details.")
+#     except Exception as e:
+#         logger.exception("Database error while updating restaurant: %s", str(e))
+#         return server_error_response("Internal server error.")   
+
+
+from sqlalchemy import and_
+from fastapi import HTTPException
+
+async def add_shop(shop_data, user_data, db):
+    try:
+        logger.info("Shop details : %s", shop_data)
+        logger.info("User data: %s", user_data)
+
+        # ✅ Case 1: Update existing shop if shop_id is provided
+        if getattr(shop_data, "shop_id", None):
+            existing_shop = db.query(RestruntShop).filter(
+                RestruntShop.shop_id == shop_data.shop_id,
+                RestruntShop.owner_id == user_data["user_id"],
+                RestruntShop.status == "ACTIVE"
+            ).first()
+
+            if not existing_shop:
+                logger.error("Shop ID %s not found for update", shop_data.shop_id)
+                return bad_request_response("Shop not found for update")
+
+            # ✅ Check if another shop has the same name (excluding this shop)
+            duplicate_shop = db.query(RestruntShop).filter(
+                and_(
+                    RestruntShop.shop_name == shop_data.shop_name,
+                    RestruntShop.shop_id != shop_data.shop_id,
+                    RestruntShop.status == "ACTIVE"
+                )
+            ).first()
+
+            if duplicate_shop:
+                logger.error("Another shop already exists with name: %s", shop_data.shop_name)
+                return bad_request_response("Another shop already exists with this name")
+
+            # ✅ Update fields
+            existing_shop.shop_name = shop_data.shop_name or existing_shop.shop_name
+            existing_shop.shop_address = shop_data.shop_address or existing_shop.shop_address
+            existing_shop.GST_license = shop_data.GST_license or existing_shop.GST_license
+            existing_shop.fssai = shop_data.fssai or existing_shop.fssai
+            existing_shop.pan = shop_data.pan or existing_shop.pan
+            existing_shop.bank_name = shop_data.bank_name or existing_shop.bank_name
+            existing_shop.account_number = shop_data.account_number or existing_shop.account_number
+            existing_shop.ifsc_code = shop_data.ifsc_code or existing_shop.ifsc_code
+
+            db.commit()
+            db.refresh(existing_shop)
+
+            logger.info("Shop updated successfully: %s", existing_shop.shop_id)
+            return handle_success(f"Shop details updated successfully.")
+
+        # ✅ Case 2: Insert new shop if no shop_id provided
+        else:
+            # Check if restaurant with same name & address exists
+            if db.query(RestruntShop).filter(
+                and_(
+                    RestruntShop.shop_name == shop_data.shop_name,
+                    RestruntShop.shop_address == shop_data.shop_address
+                )
+            ).first():
+                logger.error("Restaurant with this name already exists: %s", shop_data.shop_name)
+                return bad_request_response("Restaurant with this name already exists")
+
+            new_shop = RestruntShop(
+                owner_id=user_data["user_id"],
+                shop_name=shop_data.shop_name,
+                shop_address=shop_data.shop_address,
+                GST_license=shop_data.GST_license,
+                fssai=shop_data.fssai,
+                pan=shop_data.pan,
+                bank_name=shop_data.bank_name,
+                account_number=shop_data.account_number,
+                ifsc_code=shop_data.ifsc_code,
+                is_open=False,
+                verification_status='PENDING',
+                status='ACTIVE'
+            )
+
+            db.add(new_shop)
+            db.commit()
+            db.refresh(new_shop)
+
+            logger.info("New shop added successfully: %s", new_shop.shop_id)
+            return handle_success(f"Shop added successfully.")
+
     except Exception as e:
-        logger.exception("Database error while updating restaurant: %s", str(e))
-        return server_error_response("Internal server error.")   
+        logger.exception("Database error while adding/updating restaurant: %s", str(e))
+        return server_error_response("Internal server error.")
+
+
 
 
 def shop_to_dict(shop: RestruntShop):
@@ -380,7 +470,7 @@ async def shop_verification(shop_data , db):
         
          # Create RestruntShop object
           
-        logger.info("Successfullyverification.")
+        logger.info("Successfully verification.")
         return handle_success("Successfullyverification.")
     except Exception as e:
         logger.exception("Database error while updating restaurant: %s", str(e))

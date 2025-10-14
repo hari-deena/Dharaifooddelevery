@@ -3,7 +3,7 @@ from datetime import datetime
 from app.utils import config
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from app.models.table_management import Restaurant, Menu
+from app.models.table_management import Restaurant, Menu, RestruntShop
 from app.core.logger_config import configure_logger
 from app.utils import config
 import asyncio
@@ -18,6 +18,7 @@ def generate_filename(file):
     return f"{uuid4()}_{file.filename}"
 
 
+from app.services.s3_operations import delete_s3_folder_objects, upload_images_to_s3
 
 
 async def add_menus(restaurant_data,menu_images,user_data, db):
@@ -25,37 +26,52 @@ async def add_menus(restaurant_data,menu_images,user_data, db):
         
         logger.info("restaurant_data: -----------------> %s",restaurant_data)
     
-
         # Check if Restaurant id with same name exists
-        if not db.query(Restaurant).filter(Restaurant.restaurant_id == restaurant_data.restaurant_id).first():
-            logger.error("Restaurant id not present: %s", restaurant_data.restaurant_id)
+        if not db.query(RestruntShop).filter(RestruntShop.shop_id == restaurant_data.shop_id).first():
+            logger.error("Restaurant id not present: %s", restaurant_data.shop_id)
             return bad_request_response("Restaurant id not present.")
         
-        if db.query(Menu).filter(Menu.restaurant_id == restaurant_data.restaurant_id, Menu.item_name == restaurant_data.item_name).first():
+        if db.query(Menu).filter(Menu.shop_id == restaurant_data.shop_id, Menu.item_name == restaurant_data.item_name).first():
             logger.error("Item name all ready exits.")
             return bad_request_response("Item name all ready exits.")
         
         # Generate filenames
-        menu_images = generate_filename(menu_images)
-        logger.info("menu_images: -------------------> %s",menu_images)
+        # menu_images = generate_filename(menu_images)
+        # logger.info("menu_images: -------------------> %s",menu_images)
         
         
         new_menu = Menu(
-        restaurant_id=restaurant_data.restaurant_id,  # Replace with actual restaurant_id
+        shop_id=restaurant_data.shop_id,  # Replace with actual restaurant_id
         item_name=restaurant_data.item_name,
         description=restaurant_data.description,
         price=restaurant_data.price,
         discount_price=restaurant_data.discount_price,
         is_available=True,
-        category=restaurant_data.category,  # Example JSON data
+        category_id=restaurant_data.category_id,  # Example JSON data
         veg_nonveg=restaurant_data.veg_nonveg,
         preparation_time=restaurant_data.preparation_time,
-        menu_images=menu_images # Example JSON list
+        # menu_images=menu_images # Example JSON list
         )
 
         db.add(new_menu)
         db.commit()
         db.refresh(new_menu)
+        
+        logger.info("Menu id: ------------------> %s",new_menu.menu_id)
+        
+        folder = f"menu/{new_menu.menu_id}"
+        
+        menu_images = await upload_images_to_s3([menu_images], folder)
+        logger.info("menu_images: ------------------> %s",menu_images)
+        
+        menu = db.query(Menu).filter(Menu.menu_id == new_menu.menu_id).first()
+        
+        menu.menu_images = menu_images if menu_images else None
+        
+        # Commit changes
+        db.commit()
+        db.refresh(menu) 
+        
    
         logger.info("Menu added successfully")
         return handle_success("Menu added restaurant.")
@@ -77,13 +93,13 @@ async def update_menus(restaurant_data,menu_images,user_data, db):
     
 
         # Check if Restaurant id with same name exists
-        if not db.query(Restaurant).filter(Restaurant.restaurant_id == restaurant_data.restaurant_id).first():
-            logger.error("Restaurant id not present: %s", restaurant_data.restaurant_id)
+        if not db.query(RestruntShop).filter(RestruntShop.shop_id == restaurant_data.shop_id).first():
+            logger.error("Restaurant id not present: %s", restaurant_data.shop_id)
             return bad_request_response("Restaurant id not present.")
         
         # Menu Name check
         if db.query(Menu).filter(
-            Menu.restaurant_id == restaurant_data.restaurant_id,
+            Menu.shop_id == restaurant_data.shop_id,
             Menu.item_name == restaurant_data.item_name,
             Menu.menu_id != restaurant_data.menu_id  # This is the NOT EQUAL condition
         ).first():
@@ -104,7 +120,7 @@ async def update_menus(restaurant_data,menu_images,user_data, db):
 
         # Fields to update
         update_fields = [
-            "restaurant_id", "item_name", "description", "price", "discount_price",
+            "shop_id", "item_name", "description", "price", "discount_price",
             "is_available", "category_id", "veg_nonveg", "preparation_time", "menu_images"
         ]
 
@@ -139,12 +155,12 @@ def format_restaurant_menu(rows):
     grouped = {}
 
     for row in rows:
-        restaurant_id = row["restaurant_id"]
+        shop_id = row["shop_id"]
 
-        if restaurant_id not in grouped:
+        if shop_id not in grouped:
             # Initialize restaurant-level details
-            grouped[restaurant_id] = {
-                "restaurant_id": row["restaurant_id"],
+            grouped[shop_id] = {
+                "shop_id": row["shop_id"],
                 "restaurant_name": row["restaurant_name"],
                 "address": row["address"],
                 "logo": row["logo"],
@@ -175,7 +191,7 @@ def format_restaurant_menu(rows):
             "menu_images": row["menu_images"],
             "category_name": row["category_name"]
         }
-        grouped[restaurant_id]["menus"].append(menu_data)
+        grouped[shop_id]["menus"].append(menu_data)
 
     # Convert dict → list
     return list(grouped.values())

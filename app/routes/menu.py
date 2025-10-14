@@ -19,13 +19,13 @@ menu_router = APIRouter()
 
 @menu_router.post("/add_menu")
 async def add_menus(
-    restaurant_id: int = Form(...),
+    shop_id: int = Form(...),
     item_name: str = Form(...),
     description: str = Form(...),
     price: float = Form(0.0),
     discount_price: float = Form(0.0),
     is_available: bool = Form(...),
-    category: str = Form(...),  
+    category_id: int = Form(...),  
     veg_nonveg: str = Form(...),  
     preparation_time : int = Form(...),
     menu_images: Optional[UploadFile] = File(...),
@@ -39,13 +39,13 @@ async def add_menus(
     try:
 
         menu_data = MenuSchema(
-            restaurant_id=restaurant_id,
+            shop_id=shop_id,
             item_name=item_name,
             description=description,
             price=price,
             discount_price=discount_price,
             is_available=is_available,
-            category=category,
+            category_id=category_id,
             veg_nonveg=veg_nonveg,
             preparation_time=preparation_time,
             # menu_images=menu_images,
@@ -58,6 +58,7 @@ async def add_menus(
     except ValidationError as ve:
         # Extract only the custom message from the error list
         first_error_msg = ve.errors()[0]['msg']
+        print("-----------------------> ")
         return bad_request_response(first_error_msg)
 
 
@@ -67,7 +68,7 @@ async def add_menus(
 @menu_router.post("/update_menu/{menu_id}")
 async def update_menus(
     menu_id: int,
-    restaurant_id: int = Form(...),
+    shop_id: int = Form(...),
     item_name: str = Form(...),
     description: str = Form(...),
     price: float = Form(0.0),
@@ -88,7 +89,7 @@ async def update_menus(
 
         menu_data = MenuSchema(
             menu_id=menu_id,
-            restaurant_id=restaurant_id,
+            shop_id=shop_id,
             item_name=item_name,
             description=description,
             price=price,

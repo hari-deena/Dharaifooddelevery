@@ -100,7 +100,9 @@ class Menu(Base):
     __tablename__ = "menus"
 
     menu_id = Column(Integer, primary_key=True, autoincrement=True)
-    restaurant_id = Column(Integer, ForeignKey("restaurants.restaurant_id"), nullable=False)
+    # restaurant_id = Column(Integer, ForeignKey("restaurants.restaurant_id"), nullable=False)
+    shop_id = Column(Integer, ForeignKey("restrunt_shop.shop_id"), nullable=False)  # Changed here
+
 
     item_name = Column(String(255), nullable=False)
     description = Column(String(500))
@@ -118,7 +120,7 @@ class Menu(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), server_onupdate=func.now())
     
-    restaurant = relationship("Restaurant")
+    restaurant = relationship("RestruntShop")
     categories = relationship("Category")
 
 

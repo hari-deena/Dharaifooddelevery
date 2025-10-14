@@ -36,8 +36,8 @@ async def verify_token(token: Optional[str] = Header(None), db: Session = Depend
     existing_user = db.query(User).filter(User.user_id == data["user_id"]).first()
     logger.info("existing_user ----------> userId: %s",existing_user)
     if not existing_user:
-        logger.error("User already present")
-        return bad_request_response("User already present.")
+        logger.error("User not present")
+        return bad_request_response("User not present.")
 
     return data
 
