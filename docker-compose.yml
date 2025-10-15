@@ -1,4 +1,4 @@
-# docker-compose.yml
+cat > docker-compose.yml <<EOF
 version: '3.8'
 
 services:
@@ -18,7 +18,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DB_HOST: db          # ← crucial: use service name, NOT localhost
+      DB_HOST: db
       DB_USER: root
       DB_PASSWORD: root123
       DB_NAME: food_app
@@ -28,3 +28,4 @@ services:
 
 volumes:
   mysql_data:
+EOF
