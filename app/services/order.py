@@ -211,3 +211,110 @@ async def get_shop_orders(shop_id, rest_status, db):
 
 
 
+
+# async def restrunt_accept(request, db):
+#     try:
+#         logger.info("Order Data: %s", request.rest_status)
+        
+#         result = (
+#         db.query(RestaurantOrderStatus)
+#         .filter(
+#             RestaurantOrderStatus.order_id == request.order_id,
+#             RestaurantOrderStatus.rest_status == request.rest_status
+#         )
+#         .first()
+#         )
+        
+        
+#         order_result = (
+#         db.query(Order)
+#         .filter(
+#             Order.order_id == request.order_id,
+#             Order.overall_status == request.rest_status
+#         )
+#         .first()
+#         )
+        
+#         order_items_esult = (
+#         db.query(OrderItem)
+#         .filter(
+#             OrderItem.order_id == request.order_id,
+#             OrderItem.item_status == request.rest_status
+#         )
+#         .first()
+#         )
+        
+        
+            
+        
+       
+        
+#         logger.info(f"Restrunt order successfully")
+#         return handle_success(f"Restrunt order successfully")
+
+#     except Exception as e:
+#         # await db.rollback()
+#         logger.exception("Database error while adding order: %s", str(e))
+#         return server_error_response("Internal server error.")
+   
+   
+async def restrunt_accept(request, db):
+    try:
+        logger.info("Restaurant request received with status: %s", request)
+
+        # 1️⃣ Validate Restaurant Order Status
+        restaurant_order = db.execute(
+            update(RestaurantOrderStatus)
+            .where(RestaurantOrderStatus.order_id == request.order_id)
+            .values(
+                rest_status=request.rest_status
+            )
+        )
+
+        # 2️⃣ Validate Main Order
+        order = db.execute(
+            update(Order)
+            .where(Order.order_id == request.order_id)
+            .values(
+                overall_status=request.rest_status
+            )
+        )
+
+        # 3️⃣ Validate Order Items
+        order_item = db.execute(
+            update(OrderItem)
+            .where(OrderItem.order_id == request.order_id)
+            .values(
+                item_status=request.rest_status
+            )
+        )
+
+        # 4️⃣ Log results for debugging
+        logger.info(f"Restaurant Order: {restaurant_order}")
+        logger.info(f"Main Order: {order}")
+        logger.info(f"Order Item: {order_item}")
+
+        # 5️⃣ Validation check — if none found
+        if not restaurant_order or not order or not order_item:
+            logger.warning("No matching records found for order_id: %s", request.order_id)
+            return server_error_response("No matching order found")
+
+        # 6️⃣ If you want to update statuses, example:
+        # restaurant_order.rest_status = request.rest_status
+        # order.overall_status = request.rest_status
+        # order_item.item_status = request.rest_status
+        
+        db.commit()
+
+        logger.info("Restaurant order processed successfully.")
+        return handle_success("Restaurant order processed successfully.")
+
+    
+
+    except Exception as e:
+        db.rollback()
+        logger.exception("Database error while processing restaurant order: %s", str(e))
+        return server_error_response("Internal server error.")  
+   
+   
+   

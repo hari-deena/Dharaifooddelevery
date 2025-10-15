@@ -6,7 +6,7 @@ from typing import Optional, List
 from ..utils.response_handling import bad_request_response, handle_unauthorized_error
 from pydantic import ValidationError
 from fastapi.responses import JSONResponse
-from ..schemas.order import OrderPayload
+from ..schemas.order import OrderPayload, RestaurantOrderStatusRequest
 from app.core.logger_config import configure_logger
 logger = configure_logger('justplay')
 from ..utils.response_handling import CustomAuthException
@@ -67,3 +67,22 @@ async def get_shop_order(
         # Extract only the custom message from the error list
         first_error_msg = ve.errors()[0]['msg']
         return bad_request_response(first_error_msg)
+
+
+
+
+@order_router.post("/restrunt_accept")
+async def restrunt_accept(
+    request: RestaurantOrderStatusRequest,
+    db: Session = Depends(get_db),
+    # user_data: str = Depends(verify_token)  # <-- Token auth dependency
+    
+):
+    try:
+        return await order.restrunt_accept(request, db)
+        
+    except ValidationError as ve:
+        # Extract only the custom message from the error list
+        first_error_msg = ve.errors()[0]['msg']
+        return bad_request_response(first_error_msg)
+  
