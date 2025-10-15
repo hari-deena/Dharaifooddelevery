@@ -151,35 +151,75 @@ from ..query import menu
 
 from collections import defaultdict
 
+# def format_restaurant_menu(rows):
+#     grouped = {}
+
+#     for row in rows:
+#         shop_id = row["shop_id"]
+
+#         if shop_id not in grouped:
+#             # Initialize restaurant-level details
+#             grouped[shop_id] = {
+#                 "shop_id": row["shop_id"],
+#                 "restaurant_name": row["restaurant_name"],
+#                 "address": row["address"],
+#                 "logo": row["logo"],
+#                 "restaurant_image": row["restaurant_image"],
+#                 "vat_tax": row["vat_tax"],
+#                 "cuisine": row["cuisine"],   # already processed earlier
+#                 "food_type": row["food_type"],
+#                 "zone": row["zone"],
+#                 "latitude": row["latitude"],
+#                 "longitude": row["longitude"],
+#                 "status": row["status"],
+#                 "restaurant_phone": row["restaurant_phone"],
+#                 "delivery_type": row["delivery_type"],
+#                 "is_open": row["is_open"],
+#                 "menus": []  # collect menus here
+#             }
+
+#         # Add menu-level details
+#         menu_data = {
+#             "menu_id": row["menu_id"],
+#             "item_name": row["item_name"],
+#             "description": row["description"],
+#             "price": row["price"],
+#             "discount_price": row["discount_price"],
+#             "is_available": row["is_available"],
+#             "veg_nonveg": row["veg_nonveg"],
+#             "preparation_time": row["preparation_time"],
+#             "menu_images": row["menu_images"],
+#             "category_name": row["category_name"]
+#         }
+#         grouped[shop_id]["menus"].append(menu_data)
+
+#     # Convert dict → list
+#     return list(grouped.values())
+
+import json
+
 def format_restaurant_menu(rows):
     grouped = {}
 
     for row in rows:
-        shop_id = row["shop_id"]
+        shop_id = row["restaurant_id"]
 
         if shop_id not in grouped:
-            # Initialize restaurant-level details
             grouped[shop_id] = {
-                "shop_id": row["shop_id"],
+                "shop_id": row["restaurant_id"],
                 "restaurant_name": row["restaurant_name"],
                 "address": row["address"],
-                "logo": row["logo"],
-                "restaurant_image": row["restaurant_image"],
-                "vat_tax": row["vat_tax"],
-                "cuisine": row["cuisine"],   # already processed earlier
-                "food_type": row["food_type"],
-                "zone": row["zone"],
+                "logo": json.loads(row["logo"]) if row["logo"] else None,
+                "restaurant_image":json.loads(row["restaurant_image"]) if row["restaurant_image"] else None,
+                "kitchen_image":json.loads(row["kitchen_image"]) if row["kitchen_image"] else None,
                 "latitude": row["latitude"],
                 "longitude": row["longitude"],
                 "status": row["status"],
-                "restaurant_phone": row["restaurant_phone"],
-                "delivery_type": row["delivery_type"],
                 "is_open": row["is_open"],
-                "menus": []  # collect menus here
+                "menus": []
             }
 
-        # Add menu-level details
-        menu_data = {
+        grouped[shop_id]["menus"].append({
             "menu_id": row["menu_id"],
             "item_name": row["item_name"],
             "description": row["description"],
@@ -188,23 +228,19 @@ def format_restaurant_menu(rows):
             "is_available": row["is_available"],
             "veg_nonveg": row["veg_nonveg"],
             "preparation_time": row["preparation_time"],
-            "menu_images": row["menu_images"],
+            "menu_images":json.loads(row["menu_images"]) if row["menu_images"] else None,
             "category_name": row["category_name"]
-        }
-        grouped[shop_id]["menus"].append(menu_data)
+        })
 
-    # Convert dict → list
     return list(grouped.values())
 
-
-
 # get filter filed 
-async def get_menus(restaurant_id, item_name, category_id, veg_nonveg, user_data, db):
+async def get_menus(restaurant_id,restaurant_name, item_name, category_id, veg_nonveg, user_data, db):
     try:
         logger.info(f"restaurant_id: {restaurant_id}, item_name: {item_name}, category_id: {category_id}, veg_nonveg: {veg_nonveg}")
         
         # call the get query 
-        data = menu.get_restaurant_menu(db, restaurant_id, item_name, category_id, veg_nonveg)
+        data = menu.get_restaurant_menu(db, restaurant_id, restaurant_name, item_name, category_id, veg_nonveg)
         logger.info("Data: %s",data)
         
         

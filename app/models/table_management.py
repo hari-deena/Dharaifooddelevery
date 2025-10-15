@@ -183,8 +183,127 @@ class RestruntShop(Base):
     )
 
 
+
+# ---------------------------------------------- Order FLow ----------------------------------------------------
+
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    order_id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    total_amount = Column(Float, nullable=False)
+    payment_status = Column(
+        Enum('PENDING', 'PAID', 'FAILED', name='payment_status_enum'),
+        default='PENDING',
+        nullable=False
+    )
+    overall_status = Column(
+        Enum('PLACED', 'PARTIALLY_ACCEPTED', 'ACCEPTED', 'IN_PROGRESS', 'DELIVERED', 'CANCELLED', name='order_overall_status_enum'),
+        default='PLACED',
+        nullable=False
+    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User")
+    # order_items = relationship("OrderItem", back_populates="order")
+    # restaurant_statuses = relationship("RestaurantOrderStatus", back_populates="order")
+
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+
+    order_item_id = Column(Integer, primary_key=True, autoincrement=True)
+    order_id = Column(Integer, ForeignKey("orders.order_id"), nullable=False)
+    shop_id = Column(Integer, ForeignKey("restrunt_shop.shop_id"), nullable=False)
+    menu_id = Column(Integer, ForeignKey("menus.menu_id"), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    price = Column(Float, nullable=False)
+    item_status = Column(
+        Enum('PLACED', 'ACCEPTED', 'REJECTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED', name='item_status_enum'),
+        default='PLACED',
+        nullable=False
+    )
+
+    # Relationships
+    order = relationship("Order")
+    shop = relationship("RestruntShop")
+    menu = relationship("Menu")
+    
+    
+    
+
+
+
+
+class RestaurantOrderStatus(Base):
+    __tablename__ = "restaurant_order_status"
+
+    rest_order_id = Column(Integer, primary_key=True, autoincrement=True)
+    order_id = Column(Integer, ForeignKey("orders.order_id"), nullable=False)
+    shop_id = Column(Integer, ForeignKey("restrunt_shop.shop_id"), nullable=False)
+    rest_status = Column(
+        Enum('PENDING', 'ACCEPTED', 'REJECTED', 'PREPARING', 'READY_FOR_PICKUP', name='rest_status_enum'),
+        default='PENDING',
+        nullable=False
+    )
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    order = relationship("Order")
+    shop = relationship("RestruntShop")
+    delivery_assignment = relationship("DeliveryAssignment")
+
  
 
+class DeliveryBoy(Base):
+    __tablename__ = "delivery_boy"
+
+    delivery_boy_id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    phone = Column(String(15), nullable=False, unique=True)
+    status = Column(
+        Enum('AVAILABLE', 'BUSY', 'INACTIVE', name='delivery_boy_status_enum'),
+        default='AVAILABLE',
+        nullable=False
+    )
+    
+    
+
+class DeliveryAssignment(Base):
+    __tablename__ = "delivery_assignment"
+
+    assignment_id = Column(Integer, primary_key=True, autoincrement=True)
+    rest_order_id = Column(Integer, ForeignKey("restaurant_order_status.rest_order_id"), nullable=False)
+    delivery_boy_id = Column(Integer, ForeignKey("delivery_boy.delivery_boy_id"), nullable=True)
+    assign_status = Column(
+        Enum('WAITING', 'ASSIGNED', 'PICKED_UP', 'DELIVERED', 'CANCELLED', name='assign_status_enum'),
+        default='WAITING',
+        nullable=False
+    )
+    assigned_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    restaurant_order = relationship("RestaurantOrderStatus")
+    delivery_boy = relationship("DeliveryBoy")
+    
+    
+class OrderTracking(Base):
+    __tablename__ = "order_tracking"
+
+    track_id = Column(Integer, primary_key=True, autoincrement=True)
+    order_id = Column(Integer, ForeignKey("orders.order_id"), nullable=False)
+    entity = Column(Enum('USER', 'RESTAURANT', 'DELIVERY_BOY', 'SYSTEM', name='tracking_entity_enum'), nullable=False)
+    status = Column(String(50), nullable=False)
+    remarks = Column(String(500))  # or Text if very long
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationship
+    order = relationship("Order")
 
 
 

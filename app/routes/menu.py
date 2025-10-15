@@ -117,6 +117,7 @@ async def update_menus(
 async def get_menus(
     restaurant_id : Optional[int] = Query(None, description="restaurant id using get feedback"),
     item_name : Optional[str] = Query(None, description="restaurant id using get feedback"),
+    restaurant_name : Optional[str] = Query(None, description="restaurant name using get feedback"),
     category_id : Optional[int] = Query(None, description="restaurant id using get feedback"),
     veg_nonveg : Optional[str] = Query(None, description="restaurant id using get feedback"),
 
@@ -125,7 +126,7 @@ async def get_menus(
     
 ):
     try:
-        return await menu.get_menus(restaurant_id, item_name, category_id, veg_nonveg, user_data, db)
+        return await menu.get_menus(restaurant_id,restaurant_name, item_name, category_id, veg_nonveg, user_data, db)
         
     except ValidationError as ve:
         # Extract only the custom message from the error list
