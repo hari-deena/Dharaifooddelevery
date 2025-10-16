@@ -202,7 +202,111 @@ async def get_restaurant(restaurant_id, user_data, db):
 
 
 
+from app.models.table_management import Category, Cuisine, Menu
+from sqlalchemy import func, or_
 
+async def get_categories(db):
+    try:
+       
+        logger.info("Categories fetched successfully")
+        
+        categories = db.query(Category).all()
+        
+        category_list = [
+                {"category_id": c.category_id, "category_name": c.category_name}
+                for c in categories
+            ]
+        
+        logger.info("categories: ------------> ",category_list)
+            
+        return handle_success_with_data(
+            "Successfully fetched restaurants.",
+            category_list
+        )
+
+    except Exception as e:
+        logger.exception("Database error while fetching restaurant: %s", str(e))
+        return server_error_response("Internal server error.")
+
+
+
+async def get_cuisines(db):
+    try:
+       
+        logger.info("Categories fetched successfully")
+        
+        cuisines = db.query(Cuisine).all()
+        
+        cuisines_list = [
+                {"cuisine_id": c.cuisine_id, "cuisine_name": c.cuisine_name}
+                for c in cuisines
+            ]
+        
+        logger.info("categories: ------------> ",cuisines_list)
+            
+        return handle_success_with_data(
+            "Successfully fetched restaurants.",
+            cuisines_list
+        )
+
+    except Exception as e:
+        logger.exception("Database error while fetching restaurant: %s", str(e))
+        return server_error_response("Internal server error.")
+
+
+async def get_restrunt_food_name(search_name, db):
+    try:
+       
+        logger.info("Categories fetched successfully")
+        
+        search_name = search_name.lower()
+
+        # Fetch menus where prefix (1–3 chars) match search_name
+        result = (
+            db.query(Menu, RestruntShop)
+            .join(RestruntShop, Menu.shop_id == RestruntShop.shop_id)
+            .filter(
+                or_(
+                    func.substr(func.lower(Menu.item_name), 1, 3) == search_name[:3],
+                    func.substr(func.lower(Menu.item_name), 1, 2) == search_name[:2],
+                    func.substr(func.lower(Menu.item_name), 1, 1) == search_name[:1],
+                    func.substr(func.lower(RestruntShop.shop_name), 1, 3) == search_name[:3],
+                    func.substr(func.lower(RestruntShop.shop_name), 1, 2) == search_name[:2],
+                    func.substr(func.lower(RestruntShop.shop_name), 1, 1) == search_name[:1],
+                )
+            )
+            .all()
+        )
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No matching results found")
+
+        # Format output JSON
+        data = [
+            {
+                "Menu": {
+                    "menu_id": m.menu_id,
+                    "item_name": m.item_name,
+                    "price": m.price
+                },
+                "Shop": {
+                    "shop_id": s.shop_id,
+                    "shop_name": s.shop_name
+                }
+            }
+            for m, s in result
+        ]
+
+      
+            
+        return handle_success_with_data(
+            "Successfully fetched restaurants.",
+            data
+        )
+
+    except Exception as e:
+        logger.exception("Database error while fetching restaurant: %s", str(e))
+        return server_error_response("Internal server error.")
 
 
 
