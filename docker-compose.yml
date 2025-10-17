@@ -1,3 +1,4 @@
+
 version: '3.9'
 
 services:
@@ -6,8 +7,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DB_USER=dharaifood
-      DB_PASSWORD=DharaiFood123!
-      DB_HOST=184.72.86.165
-      DB_NAME=dharaifood
-      PORT=3036
+      DB_HOST: "184.72.86.165"
+      DB_PORT: "3306"
+      DB_USER: "dharaifood"
+      DB_PASSWORD: "DharaiFood123!"
+      DB_NAME: "dharaifood"
+
