@@ -6,7 +6,7 @@ from app.utils import config
 # from app.utils.email_templates import generate_booking_confirmation, generate_booking_cancellation, generate_turf_inactive_cancellation, generate_booking_completed, generate_turf_booking_confirmation_nad_cancelation
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from app.models.table_management import Order, OrderItem, RestaurantOrderStatus, Menu
+from app.models.table_management import Order, OrderItem, RestaurantOrderStatus, Menu, Notification, User, RestruntShop
 from app.core.logger_config import configure_logger
 from app.utils import config
 import asyncio
@@ -81,6 +81,20 @@ async def add_order(request, db):
             restaurant_statuses.append(status_entry)
 
         db.add_all(restaurant_statuses)
+        
+        user = db.query(User).filter(User.user_id == request.user_id).first()
+        
+        # add notification table 
+        new_notification = Notification(
+            recipient_id=shop_id,
+            recipient_type='RESTAURANT',
+            title="New Order Received",
+            message=f"Order #{order_id} from user {user.user_name}",
+            entity_type='ORDER',
+            entity_id=order_id,
+        )
+        
+        db.add(new_notification)
 
         # Commit everything atomically
         db.commit()
@@ -288,6 +302,41 @@ async def restrunt_accept(request, db):
                 item_status=request.rest_status
             )
         )
+        
+        result = (
+        db.query(
+            RestaurantOrderStatus.rest_order_id,
+            RestruntShop.shop_name,
+            Order.user_id
+        )
+        .join(RestruntShop, RestaurantOrderStatus.shop_id == RestruntShop.shop_id)
+        .join(Order, RestaurantOrderStatus.order_id == Order.order_id)
+        .filter(RestaurantOrderStatus.order_id == request.order_id)
+        .first()
+    )
+        
+        
+        
+        
+#         create_notification(
+#     recipient_id=user_id,
+#     recipient_type='USER',
+#     title="Order Accepted",
+#     message=f"{shop.name} has accepted your order",
+#     entity_type="RESTAURANT_ORDER_STATUS",
+#     entity_id=rest_order_status.rest_order_id
+# )
+        
+        new_notification = Notification(
+            recipient_id=result.user_id,
+            recipient_type='USER',
+            title='Order Accepted',
+            message=f"{result.shop_name} has accepted your order",
+            entity_type='RESTAURANT_ORDER_STATUS',
+            entity_id=result.rest_order_id,
+        )
+
+        db.add(new_notification)
 
         # 4️⃣ Log results for debugging
         logger.info(f"Restaurant Order: {restaurant_order}")

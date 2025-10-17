@@ -209,9 +209,7 @@ class Order(Base):
 
     # Relationships
     user = relationship("User")
-    # order_items = relationship("OrderItem", back_populates="order")
-    # restaurant_statuses = relationship("RestaurantOrderStatus", back_populates="order")
-
+   
 
 class OrderItem(Base):
     __tablename__ = "order_items"
@@ -304,6 +302,18 @@ class OrderTracking(Base):
 
     # Relationship
     order = relationship("Order")
+    
+    
+class Notification(Base):
+    __tablename__ = "notifications"
+    id = Column(Integer, primary_key=True)
+    recipient_id = Column(Integer, nullable=False)
+    recipient_type = Column(Enum('USER', 'RESTAURANT', 'DELIVERY_BOY'))
+    title = Column(String(255))
+    message = Column(Text)  # static message
+    entity_type = Column(String(50))  # e.g., 'ORDER', 'DELIVERY_ASSIGNMENT'
+    entity_id = Column(Integer)       # ID of the related entity
+    
 
 
 
