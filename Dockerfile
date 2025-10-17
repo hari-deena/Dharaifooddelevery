@@ -35,8 +35,12 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements
 COPY requirements.txt .
 
-# Install Python dependencies
+# Upgrade pip first
+RUN pip install --upgrade pip --no-cache-dir
+
+# Then install all dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+
 
 # Copy app code
 COPY . .
