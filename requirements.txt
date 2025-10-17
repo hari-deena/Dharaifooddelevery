@@ -9,7 +9,7 @@ mysqlclient>=2.2.4 # Mysqlclient Python interface to MySQL databases.
 
 
 # pytest-asyncio>=0.23.8
-# python-multipart>=0.0.9
+python-multipart>=0.0.9
 
 tzdata>=2025.2
 coloredlogs>=15.0.1 # Colored logs for enhanced logging.
