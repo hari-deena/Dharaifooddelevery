@@ -24,7 +24,7 @@ class User(Base):
     __tablename__ = "users"
 
     user_id = Column(Integer, primary_key=True, autoincrement=True)
-    user_name = Column(String(100), nullable=False, unique=True)
+    user_name = Column(String(100), nullable=False)
     mobile_number = Column(String(15), nullable=False, unique=True)
     email = Column(String(255), nullable=True, unique=True)
     role_id = Column(Integer, ForeignKey("roles.role_id"), nullable=False)
@@ -100,7 +100,6 @@ class Menu(Base):
     __tablename__ = "menus"
 
     menu_id = Column(Integer, primary_key=True, autoincrement=True)
-    # restaurant_id = Column(Integer, ForeignKey("restaurants.restaurant_id"), nullable=False)
     shop_id = Column(Integer, ForeignKey("restrunt_shop.shop_id"), nullable=False)  # Changed here
 
 
@@ -209,6 +208,11 @@ class Order(Base):
 
     # Relationships
     user = relationship("User")
+    
+
+    
+    
+    
    
 
 class OrderItem(Base):
@@ -313,6 +317,17 @@ class Notification(Base):
     message = Column(Text)  # static message
     entity_type = Column(String(50))  # e.g., 'ORDER', 'DELIVERY_ASSIGNMENT'
     entity_id = Column(Integer)       # ID of the related entity
+    
+    
+class Cart(Base):
+    __tablename__ = "cart"
+
+    cart_id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    menu_id = Column(Integer, ForeignKey("menus.menu_id"), nullable=False)
+    
+    user = relationship("User")
+    menu = relationship("Menu")
     
 
 

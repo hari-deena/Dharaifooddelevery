@@ -136,47 +136,6 @@ async def get_restaurant(
 
 
 
-@restaurant_router.get("/get_categories")
-async def get_categories(
-    db: Session = Depends(get_db),
-    
-):
-    try:
-        return await restaurant.get_categories(db)
-        
-    except ValidationError as ve:
-        # Extract only the custom message from the error list
-        first_error_msg = ve.errors()[0]['msg']
-        return bad_request_response(first_error_msg)
-
-
-@restaurant_router.get("/get_cuisines")
-async def get_cuisines(
-    db: Session = Depends(get_db),
-    
-):
-    try:
-        return await restaurant.get_cuisines(db)
-        
-    except ValidationError as ve:
-        # Extract only the custom message from the error list
-        first_error_msg = ve.errors()[0]['msg']
-        return bad_request_response(first_error_msg)
-
-
-@restaurant_router.get("/get_restrunt_food_name")
-async def get_restrunt_food_name(
-    search_name : str = Query(None, description="name  using get data"),
-    db: Session = Depends(get_db),
-    
-):
-    try:
-        return await restaurant.get_restrunt_food_name(search_name, db)
-        
-    except ValidationError as ve:
-        # Extract only the custom message from the error list
-        first_error_msg = ve.errors()[0]['msg']
-        return bad_request_response(first_error_msg)
 
 
 
@@ -254,6 +213,51 @@ async def add_shop_imaes(
         return await restaurant.add_shop_imaes(shop_id,logo,shop_image,banner, db)
         
 
+    except ValidationError as ve:
+        # Extract only the custom message from the error list
+        first_error_msg = ve.errors()[0]['msg']
+        return bad_request_response(first_error_msg)
+
+
+
+
+@restaurant_router.get("/get_categories")
+async def get_categories(
+    db: Session = Depends(get_db),
+    
+):
+    try:
+        return await restaurant.get_categories(db)
+        
+    except ValidationError as ve:
+        # Extract only the custom message from the error list
+        first_error_msg = ve.errors()[0]['msg']
+        return bad_request_response(first_error_msg)
+
+
+@restaurant_router.get("/get_cuisines")
+async def get_cuisines(
+    db: Session = Depends(get_db),
+    
+):
+    try:
+        return await restaurant.get_cuisines(db)
+        
+    except ValidationError as ve:
+        # Extract only the custom message from the error list
+        first_error_msg = ve.errors()[0]['msg']
+        return bad_request_response(first_error_msg)
+
+
+@restaurant_router.get("/get_restrunt_food_name")
+async def get_restrunt_food_name(
+    search_name : str = Query(None, description="name  using get data"),
+    db: Session = Depends(get_db),
+    
+):
+    try:
+        return await restaurant.get_restrunt_food_name(search_name, db)
+        
     except ValidationError as ve:
         # Extract only the custom message from the error list
         first_error_msg = ve.errors()[0]['msg']
