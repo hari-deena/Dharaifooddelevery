@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from app.core.database_config import get_db
 from app.services import user
@@ -76,12 +76,13 @@ async def login(
 
 @user_router.put("/update_user")
 async def update_user(
-    request: UpdateUserSchema,
+    user_name: str = Form(...),
+    profile_image: UploadFile = File(None),
     db: Session = Depends(get_db),
     user_data: str = Depends(verify_token)  # <-- Token auth dependency
 ):
     try:
-        return await user.update_user(request,user_data, db)
+        return await user.update_user(user_name, profile_image, user_data, db)
         
     except ValidationError as ve:
         # Extract only the custom message from the error list
@@ -102,3 +103,7 @@ async def get_user(
         # Extract only the custom message from the error list
         first_error_msg = ve.errors()[0]['msg']
         return bad_request_response(first_error_msg)
+
+
+
+

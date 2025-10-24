@@ -13,6 +13,8 @@ import asyncio
 from app.utils import config
 from ..utils.common import create_jwt_token
 from sqlalchemy import update
+from app.services.s3_operations import upload_images_to_s3, delete_s3_folder_objects
+
 logger = configure_logger('justplay')
 
 
@@ -84,17 +86,31 @@ async def login(data,db):
         return server_error_response(str(e)) 
     
     
-async def update_user(request, user_data, db):
+async def update_user(user_name, profile_image, user_data, db):
     try:
-        logger.info("User update Data: %s",request)
+        logger.info("user_name:-------- %s",user_name)
+        logger.info("profile_image:-------- %s",profile_image)
+        
         logger.info("User data: %s",user_data)
+        
+        folder = f"user/{user_data["user_id"]}"
+        
+        delete_image = delete_s3_folder_objects(folder)
+        logger.info("delete_image: --------------> %s",delete_image)
+        
+        
+        profile_image = await upload_images_to_s3([profile_image], folder)
+        logger.info("menu_images: ------------------> %s",profile_image)
+        
+        
         
         # Update the user table
         result = db.execute(
             update(User)
             .where(User.user_id == user_data["user_id"])
             .values(
-                user_name=request.user_name,
+                user_name=user_name,
+                profile_image=profile_image,
                 updated_at=datetime.utcnow()
             )
         )
@@ -111,10 +127,11 @@ async def update_user(request, user_data, db):
     except Exception as e:
         logger.exception("Error during booking registration: %s", str(e))
         return server_error_response(str(e)) 
-   
+ 
+import json  
    
 # Convert User ORM object to dict ---
-def user_to_dict(user: User) -> dict:
+def user_to_dict(user: User):
     return {
         "user_id": user.user_id,
         "user_name": user.user_name,
@@ -122,6 +139,7 @@ def user_to_dict(user: User) -> dict:
         "email": user.email,
         "role_id": user.role_id,
         "status": user.status,
+        "profile_image" : user.profile_image,
         "created_at": user.created_at.isoformat() if user.created_at else None,
         "updated_at": user.updated_at.isoformat() if user.updated_at else None,
     }
@@ -163,12 +181,15 @@ async def get_user(user_id, role_id, db):
             user = query.first()
             if not user:
                 return bad_request_response(f"No user found with user_id={user_id} and role_id={role_id}")
+            print("user: -------------> ",user)
             return handle_success_with_data("User retrieved successfully", [user_to_dict(user)])
 
         # Case 4: Neither provided → return all users
         else:
             logger.info("Get all user data.")
             users = db.query(User).all()
+            print("users: -------------> ",users)
+            
             return handle_success_with_data("All users retrieved successfully", [user_to_dict(u) for u in users])
 
     except Exception as e:

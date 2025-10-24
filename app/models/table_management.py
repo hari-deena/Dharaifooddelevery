@@ -29,6 +29,7 @@ class User(Base):
     email = Column(String(255), nullable=True, unique=True)
     role_id = Column(Integer, ForeignKey("roles.role_id"), nullable=False)
     status = Column(String(20), default="ACTIVE")
+    profile_image = Column(JSON, nullable=True)  # 👈 new JSON column
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), server_onupdate=func.now())
 
@@ -203,11 +204,14 @@ class Order(Base):
         default='PLACED',
         nullable=False
     )
+    address_id = Column(Integer, ForeignKey("user_addresses.address_id"), nullable=True)  # 👈 new column added
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     user = relationship("User")
+    address = relationship("UserAddress")
     
 
     
@@ -325,9 +329,27 @@ class Cart(Base):
     cart_id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     menu_id = Column(Integer, ForeignKey("menus.menu_id"), nullable=False)
+    quantity = Column(Integer, default=1, nullable=False)  # New column with default value 1
+
     
     user = relationship("User")
     menu = relationship("Menu")
+    
+class UserAddress(Base):
+    __tablename__ = "user_addresses"
+
+    address_id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    delivery_details = Column(String(255), nullable=True)
+    address_details = Column(String(500), nullable=False)
+    receiver_name = Column(String(100), nullable=False)
+    receiver_phone = Column(String(15), nullable=False)
+    address_save_as = Column(String(50), nullable=False)  # New field for saving address as (Home/Work/etc.)
+    is_active = Column(Boolean)
+
+
+    # Relationship to User table
+    user = relationship("User")
     
 
 

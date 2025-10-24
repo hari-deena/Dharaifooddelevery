@@ -6,7 +6,7 @@ from app.utils import config
 # from app.utils.email_templates import generate_booking_confirmation, generate_booking_cancellation, generate_turf_inactive_cancellation, generate_booking_completed, generate_turf_booking_confirmation_nad_cancelation
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from app.models.table_management import Order, OrderItem, RestaurantOrderStatus, Menu, Notification, User, RestruntShop
+from app.models.table_management import Order, OrderItem, RestaurantOrderStatus, Menu, Notification, User, RestruntShop, UserAddress, Cart
 from app.core.logger_config import configure_logger
 from app.utils import config
 import asyncio
@@ -23,16 +23,34 @@ def generate_filename(file):
     """Generate a unique filename for uploaded files."""
     return f"{uuid4()}_{file.filename}"
 
+
+
+
 async def add_order(request, db):
     try:
         logger.info("Order Data: %s", request)
-        
         logger.info("user_id: -------------> %s",request.user_id)
+        
+        
+        existing_address = (
+            db.query(UserAddress)
+            .filter(
+                UserAddress.user_id == request.user_id,
+                UserAddress.is_active == True
+            )
+            .first()  # ✅ gets the first matching record or None if not found
+        )
+        
+        if not existing_address:
+            logger.error("Please select the delevery address.")
+            return bad_request_response("Please select the delevery address.")
 
         # Step 1: Create the main Order
         new_order = Order(
             user_id=request.user_id,
-            total_amount=request.total_amount
+            total_amount=request.total_amount,
+            address_id=existing_address.address_id
+            
         )
         db.add(new_order)
         db.flush()  # Get order_id without committing yet
@@ -95,6 +113,10 @@ async def add_order(request, db):
         )
         
         db.add(new_notification)
+        
+        
+        # Delete all rows in Cart for this user
+        deleted_count = db.query(Cart).filter(Cart.user_id == request.user_id).delete(synchronize_session=False)
 
         # Commit everything atomically
         db.commit()
@@ -109,19 +131,101 @@ async def add_order(request, db):
         return server_error_response("Internal server error.")
       
       
-import json
+# import json
+# from collections import defaultdict
+# from datetime import datetime
+
+# def group_orders_by_order_id(raw_results):
+#     """
+#     Groups raw SQL result rows by order_id and structures them into nested dictionaries.
+    
+#     Args:
+#         raw_results: List of dicts from db.execute(...).mappings().all()
+    
+#     Returns:
+#         List of structured orders with restaurant info and item lists.
+#     """
+#     grouped = defaultdict(list)
+    
+#     # Group rows by order_id
+#     for row in raw_results:
+#         grouped[row['order_id']].append(row)
+    
+#     final_orders = []
+    
+#     for order_id, rows in grouped.items():
+#         # Take first row to extract common order & restaurant info
+#         first_row = rows[0]
+        
+#         # Safely parse JSON-like strings (handle both '"img.png"' and '["img.png"]')
+#         def safe_json_loads(val):
+#             if not val:
+#                 return []
+#             try:
+#                 parsed = json.loads(val)
+#                 if isinstance(parsed, str):
+#                     return [parsed]
+#                 elif isinstance(parsed, list):
+#                     return parsed
+#                 else:
+#                     return [str(parsed)]
+#             except (json.JSONDecodeError, TypeError):
+#                 return [str(val)] if val else []
+
+#         restaurant_info = {
+#             "shop_id": first_row["shop_id"],
+#             "shop_name": first_row["shop_name"],
+#             "shop_address": first_row["shop_address"],
+#             "logo": safe_json_loads(first_row["logo"]),
+#             "banner": safe_json_loads(first_row["banner"]),
+#         }
+
+#         order_info = {
+#             "order_id": order_id,
+#             "total_amount": float(first_row["total_amount"]),
+#             "overall_status": first_row["overall_status"],
+#             "created_at": first_row["created_at"].isoformat() if isinstance(first_row["created_at"], datetime) else first_row["created_at"],
+#             "restaurant": restaurant_info,
+#             "items": []
+#         }
+
+#         # Add all items for this order
+#         for row in rows:
+#             item = {
+#                 "menu_id": row["menu_id"],
+#                 "item_name": row["item_name"],
+#                 "description": row["description"],
+#                 "veg_nonveg": row["veg_nonveg"],
+#                 "price": float(row["price"]),
+#                 "discount_price": float(row["discount_price"]) if row["discount_price"] is not None else None,
+#                 "quantity": row["quantity"],
+#                 "item_status": row["item_status"],
+#                 "category_id": row["category_id"],
+#                 "menu_images": safe_json_loads(row["menu_images"])
+#             }
+#             order_info["items"].append(item)
+        
+#         final_orders.append(order_info)
+    
+#     # Sort by created_at descending (optional, since original query already orders)
+#     final_orders.sort(key=lambda x: x["created_at"], reverse=True)
+    
+#     return final_orders
+
 from collections import defaultdict
+import json
 from datetime import datetime
 
 def group_orders_by_order_id(raw_results):
     """
-    Groups raw SQL result rows by order_id and structures them into nested dictionaries.
+    Groups raw SQL result rows by order_id and structures them into nested dictionaries,
+    including restaurant info, items, and user address.
     
     Args:
         raw_results: List of dicts from db.execute(...).mappings().all()
     
     Returns:
-        List of structured orders with restaurant info and item lists.
+        List of structured orders with restaurant info, item lists, and address.
     """
     grouped = defaultdict(list)
     
@@ -132,7 +236,7 @@ def group_orders_by_order_id(raw_results):
     final_orders = []
     
     for order_id, rows in grouped.items():
-        # Take first row to extract common order & restaurant info
+        # Take first row to extract common order, restaurant, and address info
         first_row = rows[0]
         
         # Safely parse JSON-like strings (handle both '"img.png"' and '["img.png"]')
@@ -150,6 +254,7 @@ def group_orders_by_order_id(raw_results):
             except (json.JSONDecodeError, TypeError):
                 return [str(val)] if val else []
 
+        # Restaurant info
         restaurant_info = {
             "shop_id": first_row["shop_id"],
             "shop_name": first_row["shop_name"],
@@ -158,12 +263,28 @@ def group_orders_by_order_id(raw_results):
             "banner": safe_json_loads(first_row["banner"]),
         }
 
+        # Address info (can be None if order.address_id is NULL)
+        address_info = None
+        if first_row.get("address_id"):
+            address_info = {
+                "address_id": first_row["address_id"],
+                "delivery_details": first_row.get("address_delivery_details"),
+                "address_details": first_row.get("address_details"),
+                "receiver_name": first_row.get("receiver_name"),
+                "receiver_phone": first_row.get("receiver_phone"),
+                "address_save_as": first_row.get("address_save_as"),
+                "is_active": first_row.get("address_is_active")
+            }
+
         order_info = {
             "order_id": order_id,
             "total_amount": float(first_row["total_amount"]),
             "overall_status": first_row["overall_status"],
+            "payment_status": first_row.get("payment_status"),
             "created_at": first_row["created_at"].isoformat() if isinstance(first_row["created_at"], datetime) else first_row["created_at"],
+            "updated_at": first_row.get("updated_at").isoformat() if isinstance(first_row.get("updated_at"), datetime) else first_row.get("updated_at"),
             "restaurant": restaurant_info,
+            "address": address_info,
             "items": []
         }
 
@@ -185,17 +306,21 @@ def group_orders_by_order_id(raw_results):
         
         final_orders.append(order_info)
     
-    # Sort by created_at descending (optional, since original query already orders)
+    # Sort by created_at descending
     final_orders.sort(key=lambda x: x["created_at"], reverse=True)
     
     return final_orders
 
 
-async def get_user_order(user_id, db):
+async def get_user_order(user_id, order_id, status, user_data, db):
     try:
-        logger.info("User id : ----------------------> %s",user_id)
+        logger.info("User_id : ----------------------> %s",user_id)
+        logger.info("order_id : ----------------------> %s",order_id)
+        logger.info("status : ----------------------> %s",status)
+        logger.info("user_data : ----------------------> %s",user_data)
         
-        data = get_user_orders(db, user_id)
+        
+        data = get_user_orders(db, user_id=user_data["user_id"], order_id=order_id, overall_status=status)
         # Assuming `result` is your list of dicts from the query
         structured_orders = group_orders_by_order_id(data)
         logger.info("Get user order successfully")

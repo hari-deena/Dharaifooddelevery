@@ -37,13 +37,14 @@ async def add_order(
 @order_router.get("/get_user_order")
 async def get_user_order(
     user_id : Optional[int] = Query(None, description="restaurant id using get feedback"),
-    # verification_status : Optional[str] = Query(None, description="restaurant verification_status  using get feedback"),
+    order_id : Optional[int] = Query(None, description="restaurant id using get feedback"),
+    status : Optional[str] = Query(None, description="restaurant id using get feedback"),
     db: Session = Depends(get_db),
-    # user_data: str = Depends(verify_token)  # <-- Token auth dependency
+    user_data: str = Depends(verify_token)  # <-- Token auth dependency
     
 ):
     try:
-        return await order.get_user_order(user_id, db)
+        return await order.get_user_order(user_id, order_id, status, user_data, db)
         
     except ValidationError as ve:
         # Extract only the custom message from the error list

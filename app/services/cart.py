@@ -33,7 +33,11 @@ async def add_cart(request,user_data,db):
 
         if existing_cart:
             logger.error("Cart already present")
-            return bad_request_response("Cart already present.")
+            existing_cart.quantity += 1  
+            db.commit()
+            db.refresh(existing_cart)
+            logger.info("Cart updated successfully.")
+            return handle_success("Cart updated successfully.")
         
         
         new_cart = Cart(
@@ -89,7 +93,8 @@ async def get_cart(user_data,db):
                     "category_id": menu.category_id,
                     "veg_nonveg": menu.veg_nonveg,
                     "preparation_time": menu.preparation_time,
-                    "menu_images": menu.menu_images
+                    "menu_images": menu.menu_images,
+                    "quantity": entry.quantity  
                 })
 
         
