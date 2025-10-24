@@ -1,10 +1,33 @@
-# from pydantic import BaseModel, model_validator, Field, field_validator
-# from enum import StrEnum
-# from typing import List, Optional, Literal
-# from fastapi import HTTPException
-# from ..utils import config
-# from pydantic import BaseModel
-# from typing import List
+from pydantic import BaseModel, model_validator, Field, field_validator
+from enum import StrEnum
+from typing import List, Optional, Literal
+from fastapi import HTTPException
+from ..utils import config
+from pydantic import BaseModel
+from typing import List
+
+
+  
+# Validates that the FCM token is a non-empty string when saving or updating a device token. 
+class FCMTokenRequest(BaseModel):
+    fcm_token: str = Field(..., description="Firebase Cloud Messaging token")
+
+    @field_validator('fcm_token', mode='before')
+    @classmethod
+    def validate_token_not_empty(cls, v):
+        if not v or not v.strip():
+            raise ValueError("FCM token must not be empty.")
+        return v
+    
+# Optionally validates a customer ID, ensuring it is greater than 0 if provided.
+class FCMTokenQuery(BaseModel):
+    customer_id: Optional[int] = Field(
+        None,
+        gt=0,
+        description="Optional customer ID. If provided, must be greater than 0"
+    )
+    
+    
 
 
 # # Validates the structure and logical combinations of data used to create or update notifications, based on a flag.
@@ -110,27 +133,7 @@
 #         if isinstance(value, bool):
 #             return value
 #         raise ValueError("flag must be a boolean: true or false only")
-    
-# # Validates that the FCM token is a non-empty string when saving or updating a device token. 
-# class FCMTokenRequest(BaseModel):
-#     fcm_token: str = Field(..., description="Firebase Cloud Messaging token")
-
-#     @field_validator('fcm_token', mode='before')
-#     @classmethod
-#     def validate_token_not_empty(cls, v):
-#         if not v or not v.strip():
-#             raise ValueError("FCM token must not be empty.")
-#         return v
-    
-# # Optionally validates a customer ID, ensuring it is greater than 0 if provided.
-# class FCMTokenQuery(BaseModel):
-#     customer_id: Optional[int] = Field(
-#         None,
-#         gt=0,
-#         description="Optional customer ID. If provided, must be greater than 0"
-#     )
-    
-    
+  
 
 # class NotificationQueryParams(BaseModel):
 #     customer_id: Optional[int] = None

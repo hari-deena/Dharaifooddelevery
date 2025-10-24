@@ -1,13 +1,26 @@
-# from fastapi import APIRouter, Depends, Query, HTTPException
-# from sqlalchemy.orm import Session
-# from app.core.database_config import get_db
-# from app.services import notification
-# from app.schemas.notification import NotificationRequest, PushNotificationRequest,  NotificationUpdateRequest, FCMTokenRequest, FCMTokenQuery, NotificationQueryParams, TurfNotificationUpdateRequest
-# from typing import Optional
-# from ..utils.response_handling import bad_request_response
-# from pydantic import ValidationError
-# from fastapi.responses import JSONResponse
-# notification_router = APIRouter()
+from fastapi import APIRouter, Depends, Query, HTTPException
+from sqlalchemy.orm import Session
+from app.core.database_config import get_db
+from app.services import notification
+from app.schemas.notification import NotificationRequest, PushNotificationRequest,  NotificationUpdateRequest, FCMTokenRequest, FCMTokenQuery, NotificationQueryParams, TurfNotificationUpdateRequest
+from typing import Optional
+from ..utils.response_handling import bad_request_response
+from pydantic import ValidationError
+from fastapi.responses import JSONResponse
+notification_router = APIRouter()
+
+
+
+# Adds or updates the FCM token for a specific customer in the database.
+@notification_router.post("/fcm_token/{customer_id}")
+async def add_or_update_fcm_tokens(
+    customer_id : int,
+    data: FCMTokenRequest,
+    db: Session = Depends(get_db)
+    
+):
+    return await notification.add_or_update_fcm_token(customer_id, data, db)
+
 
 
 
@@ -54,15 +67,6 @@
 #  ):
 #     return await notification.push_notification(data)
 
-# # Adds or updates the FCM token for a specific customer in the database.
-# @notification_router.post("/fcm_token/{customer_id}")
-# async def add_or_update_fcm_tokens(
-#     customer_id : int,
-#     data: FCMTokenRequest,
-#     db: Session = Depends(get_db)
-    
-# ):
-#     return await notification.add_or_update_fcm_token(customer_id, data, db)
 
 # # Fetches the FCM token for a customer if a valid customer ID is provided.
 # @notification_router.get("/fcm_token")

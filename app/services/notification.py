@@ -1,19 +1,102 @@
-# from ..utils.response_handling import server_error_response, bad_request_response, handle_success_with_data,handle_success
-# from datetime import datetime
-# from app.utils import config
-# from app.query.notification import get_notifications_by_customer,get_notifications_by_turf, fcm_token_field_names
-# from app.query.queries import get_filtered_fields, get_first_record, insert_record, update_records
-# from app.utils.email_templates import generate_booking_confirmation, generate_booking_cancellation, generate_turf_inactive_cancellation, generate_booking_completed, generate_turf_booking_confirmation_nad_cancelation
-# from datetime import datetime
-# from zoneinfo import ZoneInfo
-# from app.models.notification_management import User, Notification, UserFCMToken, TurfOwnerNotification, Venue
-# from app.core.logger_config import configure_logger
-# from app.utils import config
-# from app.utils.response_message import notification_response_message
-# from firebase_admin import messaging
-# import asyncio
+from ..utils.response_handling import server_error_response, bad_request_response, handle_success_with_data,handle_success
+from datetime import datetime
+from app.utils import config
+from app.query.notification import get_notifications_by_customer,get_notifications_by_turf, fcm_token_field_names
+from app.query.queries import get_filtered_fields, get_first_record, insert_record, update_records
+from app.utils.email_templates import generate_booking_confirmation, generate_booking_cancellation, generate_turf_inactive_cancellation, generate_booking_completed, generate_turf_booking_confirmation_nad_cancelation
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from app.models.table_management import User, Notification, UserFCMToken, TurfOwnerNotification, Venue
+from app.core.logger_config import configure_logger
+from app.utils import config
+from app.utils.response_message import notification_response_message
+from firebase_admin import messaging
+import asyncio
 
-# logger = configure_logger('justplay')
+logger = configure_logger('justplay')
+
+
+
+# This function inserts or updates an FCM token for a user after validating their existence, 
+# handling both insert and update flows with proper error handling and logging.
+async def add_or_update_fcm_token(customer_id, data, db):
+    try:    
+        
+        logger.info(f"Customer id: {customer_id}, FCM token: {data.fcm_token}")
+        
+        # Check if user exists
+        user = get_first_record(
+            db=db,
+            model=User,
+            filters=[
+                User.user_id == customer_id
+            ]
+        )
+        
+        if user == False:
+            logger.error("An error occurred while querying the user from the database.")
+            return server_error_response(notification_response_message('Error','user_query_error'))
+        elif not user:
+            logger.error("User is not found.")
+            return bad_request_response(notification_response_message('Error','invalid_data'))
+        
+        logger.info("User check result: %s",user.user_id)
+        
+        # Check if user already there in fcm token table or not 
+        existing_token = get_first_record(
+                db=db,
+                model=UserFCMToken,
+                filters=[UserFCMToken.user_id == customer_id]
+            )
+        
+        # logger.info("Get fcm table to user_id: %s",existing_token)
+        logger.info("Fetched FCM token record for user_id: %s", existing_token.user_id if existing_token else "No record found")
+
+        if existing_token is False:
+            logger.error("An error occurred while checking if the FCM token exists.")
+            return server_error_response(notification_response_message('Error','fcm_token_check_error'))
+        
+        # Update flow for fcm token
+        if existing_token:
+            logger.info("Starting FCM token update.")
+            token_result = update_records(
+                db=db,
+                model=UserFCMToken,
+                filter_condition=(UserFCMToken.user_id == customer_id),
+                update_data={
+                    "fcm_token": data.fcm_token,
+                    "updated_at": datetime.utcnow()
+                }
+            )
+        # Insert flow for fcm token
+        else:
+            logger.info("Starting FCM token insert.")
+            token_result = insert_record(
+                db=db,
+                model=UserFCMToken,
+                data={
+                    "user_id": customer_id,
+                    "fcm_token": data.fcm_token
+                }
+            )
+        
+        # logger.info("FCM token add or update result: %s",token_result)
+        logger.info("FCM token operation completed. Result: %s", token_result)
+
+        if not token_result:
+            logger.error("Failed to insert or update the FCM token in the database.")
+            return server_error_response(notification_response_message('Error','fcm_token_upsert_failed'))
+        
+        logger.info("Successfully insert or update the fcm token.")
+        return handle_success(notification_response_message('Success','fcm_token_upsert_success'))
+    
+    except Exception as unexpected_error:
+        logger.exception(f"Unexpected error: {str(unexpected_error)}")
+        db.rollback()
+        return server_error_response(f"Unexpected error: {str(unexpected_error)}")
+
+
+
 
 # # Converts a UTC datetime string to IST datetime string in the same format.
 # def convert_utc_to_ist(time_str: str) -> str:
@@ -507,83 +590,6 @@
 
 
 
-# # This function inserts or updates an FCM token for a user after validating their existence, 
-# # handling both insert and update flows with proper error handling and logging.
-# async def add_or_update_fcm_token(customer_id, data, db):
-#     try:    
-        
-#         logger.info(f"Customer id: {customer_id}, FCM token: {data.fcm_token}")
-        
-#         # Check if user exists
-#         user = get_first_record(
-#             db=db,
-#             model=User,
-#             filters=[
-#                 User.user_id == customer_id
-#             ]
-#         )
-        
-#         if user == False:
-#             logger.error("An error occurred while querying the user from the database.")
-#             return server_error_response(notification_response_message('Error','user_query_error'))
-#         elif not user:
-#             logger.error("User is not found.")
-#             return bad_request_response(notification_response_message('Error','invalid_data'))
-        
-#         logger.info("User check result: %s",user.user_id)
-        
-#         # Check if user already there in fcm token table or not 
-#         existing_token = get_first_record(
-#                 db=db,
-#                 model=UserFCMToken,
-#                 filters=[UserFCMToken.user_id == customer_id]
-#             )
-        
-#         # logger.info("Get fcm table to user_id: %s",existing_token)
-#         logger.info("Fetched FCM token record for user_id: %s", existing_token.user_id if existing_token else "No record found")
-
-#         if existing_token is False:
-#             logger.error("An error occurred while checking if the FCM token exists.")
-#             return server_error_response(notification_response_message('Error','fcm_token_check_error'))
-        
-#         # Update flow for fcm token
-#         if existing_token:
-#             logger.info("Starting FCM token update.")
-#             token_result = update_records(
-#                 db=db,
-#                 model=UserFCMToken,
-#                 filter_condition=(UserFCMToken.user_id == customer_id),
-#                 update_data={
-#                     "fcm_token": data.fcm_token,
-#                     "updated_at": datetime.utcnow()
-#                 }
-#             )
-#         # Insert flow for fcm token
-#         else:
-#             logger.info("Starting FCM token insert.")
-#             token_result = insert_record(
-#                 db=db,
-#                 model=UserFCMToken,
-#                 data={
-#                     "user_id": customer_id,
-#                     "fcm_token": data.fcm_token
-#                 }
-#             )
-        
-#         # logger.info("FCM token add or update result: %s",token_result)
-#         logger.info("FCM token operation completed. Result: %s", token_result)
-
-#         if not token_result:
-#             logger.error("Failed to insert or update the FCM token in the database.")
-#             return server_error_response(notification_response_message('Error','fcm_token_upsert_failed'))
-        
-#         logger.info("Successfully insert or update the fcm token.")
-#         return handle_success(notification_response_message('Success','fcm_token_upsert_success'))
-    
-#     except Exception as unexpected_error:
-#         logger.exception(f"Unexpected error: {str(unexpected_error)}")
-#         db.rollback()
-#         return server_error_response(f"Unexpected error: {str(unexpected_error)}")
  
 # # This function fetches FCM tokens for a given customer ID (if provided), validates the user, 
 # # formats the response, and handles possible errors.
