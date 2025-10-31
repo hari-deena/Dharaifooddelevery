@@ -219,9 +219,9 @@ async def add_shop_imaes(
         return bad_request_response(first_error_msg)
 
 
+# get_cuisines
 
-
-@restaurant_router.get("/get_categories")
+@restaurant_router.get("/get_categories") 
 async def get_categories(
     db: Session = Depends(get_db),
     

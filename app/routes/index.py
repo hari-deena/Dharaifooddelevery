@@ -6,7 +6,7 @@ from app.routes.menu import menu_router
 from app.routes.order import order_router
 from app.routes.cart import cart_router
 from app.routes.user_address import user_address_router
-from app.routes.notification import user_router
+# from app.routes.notification import user_router
 
 
 
