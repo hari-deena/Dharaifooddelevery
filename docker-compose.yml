@@ -7,7 +7,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DB_HOST: "184.72.86.165"
+      DB_HOST: "52.22.224.42"
       DB_PORT: "3306"
       DB_USER: "dharaifood"
       DB_PASSWORD: "DharaiFood123!"
