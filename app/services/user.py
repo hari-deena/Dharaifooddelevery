@@ -6,13 +6,13 @@ from app.utils import config
 # from app.utils.email_templates import generate_booking_confirmation, generate_booking_cancellation, generate_turf_inactive_cancellation, generate_booking_completed, generate_turf_booking_confirmation_nad_cancelation
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from app.models.table_management import User
+from app.models.table_management import RestruntShop, User
 from app.core.logger_config import configure_logger
 from app.utils import config
 import asyncio
 from app.utils import config
 from ..utils.common import create_jwt_token
-from sqlalchemy import update
+from sqlalchemy import select, update
 from app.services.s3_operations import upload_images_to_s3, delete_s3_folder_objects
 
 logger = configure_logger('justplay')
@@ -76,7 +76,28 @@ async def login(data,db):
         token = create_jwt_token(user_data)
         logger.info("Token ----------------> %s",token)
         
-        data = {"token":token}
+        status = None
+        
+        if existing_user.role_id == 3:
+            
+            shop = db.query(RestruntShop).filter(RestruntShop.owner_id == existing_user.user_id).first()
+            print("shop: -----------> ",shop)
+            if not shop:
+                status = "NEW"
+            elif shop.verification_status == "PENDING":
+                status = "PENDING"
+            elif shop.verification_status == "APPROVED":
+                status = "APPROVED"
+        
+        
+        if status == "APPROVED":
+            data = {"token":token, "status": status, "shop_id" : shop.shop_id }
+        else:
+            data = {"token":token, "status": status}
+            
+        
+        
+        
        
         logger.info("Successfully login the user")
         return handle_success_with_data("Successfully login the user",data)
