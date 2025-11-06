@@ -78,7 +78,7 @@ async def login(data,db):
         
         status = None
         
-        if existing_user.role_id == 3:
+        if existing_user.role_id == 2:
             
             shop = db.query(RestruntShop).filter(RestruntShop.owner_id == existing_user.user_id).first()
             print("shop: -----------> ",shop)
