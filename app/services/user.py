@@ -91,9 +91,10 @@ async def login(data,db):
         
         
         if status == "APPROVED":
-            data = {"token":token, "status": status, "shop_id" : shop.shop_id }
+            data = {"token":token, "status": status, "shop_id" : shop.shop_id , "role_id" : existing_user.role_id}
         else:
-            data = {"token":token, "status": status}
+            data = {"token":token, "status": status, "role_id" : existing_user.role_id}
+            
             
         
         
