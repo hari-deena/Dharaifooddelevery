@@ -25,17 +25,17 @@ def generate_filename(file):
 
 
 
-
-async def add_order(request, db):
+async def add_order(request, user_data, db):
     try:
         logger.info("Order Data: %s", request)
-        logger.info("user_id: -------------> %s",request.user_id)
+        user_id = user_data["user_id"]
+        logger.info("user_id: -------------> %s",user_id)
         
         
         existing_address = (
             db.query(UserAddress)
             .filter(
-                UserAddress.user_id == request.user_id,
+                UserAddress.user_id == user_id,
                 UserAddress.is_active == True
             )
             .first()  # ✅ gets the first matching record or None if not found
@@ -47,7 +47,7 @@ async def add_order(request, db):
 
         # Step 1: Create the main Order
         new_order = Order(
-            user_id=request.user_id,
+            user_id=user_id,
             total_amount=request.total_amount,
             address_id=existing_address.address_id
             
@@ -100,7 +100,7 @@ async def add_order(request, db):
 
         db.add_all(restaurant_statuses)
         
-        user = db.query(User).filter(User.user_id == request.user_id).first()
+        user = db.query(User).filter(User.user_id == user_id).first()
         
         # add notification table 
         new_notification = Notification(
@@ -116,7 +116,7 @@ async def add_order(request, db):
         
         
         # Delete all rows in Cart for this user
-        deleted_count = db.query(Cart).filter(Cart.user_id == request.user_id).delete(synchronize_session=False)
+        deleted_count = db.query(Cart).filter(Cart.user_id == user_id).delete(synchronize_session=False)
 
         # Commit everything atomically
         db.commit()
@@ -129,6 +129,7 @@ async def add_order(request, db):
         # await db.rollback()
         logger.exception("Database error while adding order: %s", str(e))
         return server_error_response("Internal server error.")
+  
       
       
 # import json
