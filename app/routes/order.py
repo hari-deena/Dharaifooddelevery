@@ -22,16 +22,17 @@ order_router = APIRouter()
 async def add_order(
     request: OrderPayload,
     db: Session = Depends(get_db),
-    # user_data: str = Depends(verify_token)  # <-- Token auth dependency
+    user_data: str = Depends(verify_token)  # <-- Token auth dependency
     
 ):
     try:
-        return await order.add_order(request, db)
+        return await order.add_order(request, user_data, db)
         
     except ValidationError as ve:
         # Extract only the custom message from the error list
         first_error_msg = ve.errors()[0]['msg']
         return bad_request_response(first_error_msg)
+
     
     
 @order_router.get("/get_user_order")
